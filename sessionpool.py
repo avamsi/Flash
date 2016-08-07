@@ -5,7 +5,7 @@ import time
 import requests
 import requests_toolbelt
 
-logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] %(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s [%(asctime)s]')
 logging.getLogger('requests').setLevel(logging.WARNING)
 
 
@@ -29,6 +29,7 @@ class SessionPool(object):
     @staticmethod
     def _source_address_session(ip_address):
         session = requests.Session()
+        session.headers.update({'accept-encoding': 'identity'})
         adapter = requests_toolbelt.SourceAddressAdapter(ip_address)
         session.mount('http://', adapter)
         session.mount('https://', adapter)

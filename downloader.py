@@ -9,7 +9,7 @@ import time
 import tempfile
 import urllib.parse
 
-logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] %(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s [%(asctime)s]')
 
 
 class DownloadTask(object):

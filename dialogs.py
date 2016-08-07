@@ -1,10 +1,14 @@
+from functools import partial
 from os import startfile
 from os.path import dirname
 from tkinter import *
+from tkinter.ttk import *
 from tkinter.filedialog import asksaveasfilename
 
-Tk().withdraw()
-save_as_dialog = asksaveasfilename
+root = Tk()
+root.wm_attributes('-topmost', 1)
+root.withdraw()
+save_as_dialog = partial(asksaveasfilename, parent=root)
 
 
 class DownloadCompleteDialog(object):
@@ -46,14 +50,14 @@ class DownloadCompleteDialog(object):
         buttons = Frame(self._dialog)
         buttons.pack(fill=X, pady=10)
 
-        open_button = Button(buttons, text='Open', command=self._open, relief=GROOVE)
+        open_button = Button(buttons, text='Open', command=self._open)
         open_button.pack(ipadx=10, padx=10, side=LEFT)
 
         open_folder_button = Button(
-            buttons, text='Open folder', command=self._open_folder, relief=GROOVE)
+            buttons, text='Open folder', command=self._open_folder)
         open_folder_button.pack(ipadx=10, padx=10, side=LEFT)
 
-        close_button = Button(buttons, text='Close', command=self._close, relief=GROOVE)
+        close_button = Button(buttons, text='Close', command=self._close)
         close_button.pack(ipadx=10, padx=10, side=RIGHT)
 
     def _open(self):
@@ -68,5 +72,6 @@ class DownloadCompleteDialog(object):
         self._dialog.destroy()
 
     def _show(self):
+        self._dialog.wm_attributes('-topmost', 1)
         self._dialog.focus_force()
         self._dialog.wait_window()
