@@ -1,9 +1,9 @@
 from functools import partial
-from os import startfile
-from os.path import dirname
 from tkinter import *
 from tkinter.ttk import *
 from tkinter.filedialog import asksaveasfilename
+
+from utils import openfile, openfolder
 
 root = Tk()
 root.wm_attributes('-topmost', 1)
@@ -61,11 +61,11 @@ class DownloadCompleteDialog(object):
         close_button.pack(ipadx=10, padx=10, side=RIGHT)
 
     def _open(self):
-        startfile(self._path)
+        openfile(self._path)
         self._close()
 
     def _open_folder(self):
-        startfile(dirname(self._path))
+        openfolder(self._path)
         self._close()
 
     def _close(self, event=None):

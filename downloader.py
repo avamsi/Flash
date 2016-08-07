@@ -24,8 +24,16 @@ class DownloadTask(object):
         self.url = url
         self.name = name
         self.update_info()
-        self.path = None  # ask user for path.
         self.chunks = []
+        self._path = None  # ask user for path.
+
+    @property
+    def path(self):
+        return self._path
+
+    @path.setter
+    def path(self, path):
+        self._path = os.path.normpath(path)
 
     def update_info(self):
         response = self.pool.head(self.url, allow_redirects=True)
@@ -44,9 +52,9 @@ class DownloadTask(object):
         logging.info('%s | %s MB', self.name, self.size//2**20)
 
     def run(self):
-        if not self.path or self.path is None:
-            self.path = self.name
-        logging.info('Downloading to %s', self.path)
+        if not self._path or self._path is None:
+            self._path = self.name
+        logging.info('Downloading to %s', self._path)
         self.start_time = time.monotonic()
         self.temp_directory = tempfile.mkdtemp()
         logging.info('Created a temp directory at %s', self.temp_directory)
@@ -78,20 +86,20 @@ class DownloadTask(object):
 
     def cleanup(self):
         self.update_path()
-        with open(self.path, 'wb') as out:
+        with open(self._path, 'wb') as out:
             for chunk_path in self.chunks:
                 with open(chunk_path, 'rb') as chunk:
                     out.write(chunk.read())
-        logging.info('File saved as %s', self.path)
-        shutil.rmtree(str(self.temp_directory))
+        logging.info('File saved as %s', self._path)
+        shutil.rmtree(self.temp_directory)
         self.time_elapsed = time.monotonic() - self.start_time
 
     def update_path(self):
-        if os.path.exists(self.path):
-            path_wo_ext, ext = os.path.splitext(self.path)
+        if os.path.exists(self._path):
+            path_wo_ext, ext = os.path.splitext(self._path)
             for i in range(self.MAX_CHECKS_FOR_FILE_NAME):
                 tmp_path_wo_ext = path_wo_ext + ('_%s' % i)
                 tmp_path = tmp_path_wo_ext + ext
                 if not os.path.exists(tmp_path):
-                    self.path = tmp_path
+                    self._path = tmp_path
                     return
