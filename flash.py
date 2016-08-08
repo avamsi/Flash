@@ -50,7 +50,7 @@ def complete(dtask):
     mins, secs = divmod(dtask.time_elapsed, 60)
     avg_speed = dtask.size/2**20/dtask.time_elapsed
     message = MESSAGE_FORMAT % (dtask.size//2**20, mins, secs, avg_speed)
-    dialogs.DownloadCompleteDialog(dtask.url, str(dtask.path), message)
+    dialogs.DownloadCompleteDialog(dtask.url, dtask.path, message)
 
 
 def main():

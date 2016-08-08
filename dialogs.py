@@ -26,24 +26,24 @@ class DownloadCompleteDialog(object):
         self._show()
 
     def _set_properties(self):
-        self._dialog.geometry('512x256+700+300')
+        self._dialog.geometry('500x280+730+340')
         self._dialog.title('Download completed')
         self._dialog.resizable(0, 0)
         self._dialog.bind('<Escape>', self._close)
 
     def _add_url(self):
         url = LabelFrame(self._dialog, text='URL')
-        url.pack(fill=X, padx=10, pady=5)
+        url.pack(fill=X, padx=10, pady=10)
         Label(url, text=self._url).pack(side=LEFT)
 
     def _add_path(self):
         path = LabelFrame(self._dialog, text='Path')
-        path.pack(fill=X, padx=10, pady=5)
+        path.pack(fill=X, padx=10, pady=10)
         Label(path, text=self._path).pack(side=LEFT)
 
     def _add_message(self):
         message = Frame(self._dialog)
-        message.pack(fill=X, padx=5, pady=5)
+        message.pack(fill=X, padx=5, pady=10)
         Message(message, text=self._message, width=10**6).pack(side=LEFT)
 
     def _add_buttons(self):
@@ -55,7 +55,7 @@ class DownloadCompleteDialog(object):
 
         open_folder_button = Button(
             buttons, text='Open folder', command=self._open_folder)
-        open_folder_button.pack(ipadx=10, padx=10, side=LEFT)
+        open_folder_button.pack(ipadx=10, side=LEFT)
 
         close_button = Button(buttons, text='Close', command=self._close)
         close_button.pack(ipadx=10, padx=10, side=RIGHT)
