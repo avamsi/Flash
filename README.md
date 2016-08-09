@@ -2,7 +2,7 @@
 
 Increase your download speeds by downloading from multiple IP addresses simultaneously!
 
-You can either have multiple IP addresses on the same adapter or have multiple IP adapters.
+You can either have multiple IP addresses on the same adapter or have multiple network adapters.
 If you want to use a subset of your IP addresses, change [`get_ip_addresses`](https://github.com/avamsi/Flash/blob/master/utils.py#L5) function in [`utils.py`](https://github.com/avamsi/Flash/blob/master/utils.py)
 
 **NOTE:** Flash is supposed to be cross-platform but [`utils.py`](https://github.com/avamsi/Flash/blob/master/utils.py) is Windows only. Feel free to contribute!
