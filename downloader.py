@@ -8,6 +8,9 @@ import threading
 import time
 import tempfile
 import urllib.parse
+import queue
+
+import experimental
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s [%(asctime)s]')
 
@@ -25,6 +28,7 @@ class DownloadTask(object):
         self.name = name
         self.update_info()
         self.chunks = []
+        self.done_queue = queue.Queue()
         self._path = None  # ask user for path.
 
     @property
@@ -53,14 +57,14 @@ class DownloadTask(object):
 
     def run(self):
         if not self._path or self._path is None:
-            self._path = self.name
+            self._path = os.path.abspath(self.name)
         logging.info('Downloading to %s', self._path)
         self.start_time = time.monotonic()
         self.temp_directory = tempfile.mkdtemp()
         logging.info('Created a temp directory at %s', self.temp_directory)
-        self._run()
+        self.start_workers()
 
-    def _run(self):
+    def start_workers(self):
         chunk_size = max(self.MIN_CHUNK_SIZE, self.size//(self.PARTS_PER_IP*self.pool.size))
         threads = []
         begin = 0
@@ -73,16 +77,29 @@ class DownloadTask(object):
             t = threading.Thread(target=self.worker, args=(chunk_path, byte_range))
             threads.append(t)
             t.start()
-
-        for t in threads:
-            t.join()
-        self.cleanup()
+        self.wait(threads)
 
     def worker(self, chunk_path, byte_range):
         headers = {'range': byte_range}
         data = self.pool.get(self.url, timeout=self.TIMEOUT, headers=headers).content
         with open(chunk_path, 'wb') as chunk:
             chunk.write(data)
+        self.done_queue.put(None)
+
+    def wait(self, threads):
+        threading.Thread(target=self.progress, args=(len(threads),)).start()
+        for t in threads:
+            t.join()
+        self.cleanup()
+
+    def progress(self, parts):
+        dialog = experimental.progress_dialog_async(
+            self.name, parts, self.url, self._path)
+        i = 1
+        while i <= parts:
+            self.done_queue.get()
+            dialog.progress = i
+            i += 1
 
     def cleanup(self):
         self.update_path()
