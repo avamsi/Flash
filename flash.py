@@ -25,15 +25,19 @@ session_pool = sessionpool.SessionPool(ip_addresses)
 message_queue = queue.Queue()
 
 
-def get_input():
+def listen():
     while True:
         user_input = input()
         if user_input.lower() in EXIT_COMMANDS:
             message_queue.put((sys.exit,))
             sys.exit()
-        args = parser.parse_args(shlex.split(user_input))
-        dtask = downloader.DownloadTask(session_pool, args.url, args.out)
-        message_queue.put((saveas, dtask))
+        threading.Thread(target=start, args=(user_input,)).start()
+
+
+def start(user_input):
+    args = parser.parse_args(shlex.split(user_input))
+    dtask = downloader.DownloadTask(session_pool, args.url, args.out)
+    message_queue.put((saveas, dtask))
 
 
 def saveas(dtask):
@@ -54,7 +58,7 @@ def complete(dtask):
 
 
 def main():
-    threading.Thread(target=get_input).start()
+    threading.Thread(target=listen).start()
     while True:
         callback, *args = message_queue.get()
         callback(*args)
