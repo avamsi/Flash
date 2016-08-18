@@ -10,7 +10,7 @@ def get_ip_addresses():
                               universal_newlines=True)
     for line in ipconfig.stdout.splitlines():
         line = line.strip()
-        if line.startswith('IP'):
+        if line.startswith('IPv4'):
             ip_address = line.rsplit(' ', 1)[-1]
             ip_addresses.append(ip_address)
     return ip_addresses

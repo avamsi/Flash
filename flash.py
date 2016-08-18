@@ -14,6 +14,8 @@ MESSAGE_FORMAT = (
     'Size: %s MB\n'
     'Time elapsed: %dm %ds\n'
     'Average download speed: %.2f MB/s')
+KB = 1024
+MB = 1024*KB
 
 parser = argparse.ArgumentParser()
 parser.add_argument('url')
@@ -52,8 +54,8 @@ def wait(dtask):
 
 def complete(dtask):
     mins, secs = divmod(dtask.time_elapsed, 60)
-    avg_speed = dtask.size/2**20/dtask.time_elapsed
-    message = MESSAGE_FORMAT % (dtask.size//2**20, mins, secs, avg_speed)
+    avg_speed = dtask.size/MB/dtask.time_elapsed
+    message = MESSAGE_FORMAT % (dtask.size//MB, mins, secs, avg_speed)
     dialogs.DownloadCompleteDialog(dtask.url, dtask.path, message)
 
 

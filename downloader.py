@@ -14,10 +14,13 @@ import experimental
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s [%(asctime)s]')
 
+KB = 1024
+MB = 1024*KB
+
 
 class DownloadTask(object):
 
-    MIN_CHUNK_SIZE = 10**5  # 100 KB
+    MIN_CHUNK_SIZE = 100*KB
     MAX_CHECKS_FOR_FILE_NAME = 10**6
     PARTS_PER_IP = 8
     TIMEOUT = 25
@@ -44,16 +47,18 @@ class DownloadTask(object):
         if self.name is None:
             try:
                 _, params = cgi.parse_header(response.headers['content-disposition'])
-                self.name = params['filename']
+                try:
+                    self.name = params['filename*'][7:]
+                except KeyError:
+                    self.name = params['filename']
             except KeyError:
                 path = urllib.parse.urlparse(self.url).path
                 self.name = posixpath.basename(path)
 
-        # TODO: should probably go into the except clause.
-        self.name = urllib.parse.unquote_plus(self.name)
+        self.name = urllib.parse.unquote(self.name)
         self.name = re.sub(r'[\\/:*?"<>|]', '_', self.name)  # quick fix for Windows.
         self.size = int(response.headers['content-length'])
-        logging.info('%s | %s MB', self.name, self.size//2**20)
+        logging.info('%s | %s MB', self.name, self.size//MB)
 
     def run(self):
         if not self._path or self._path is None:
