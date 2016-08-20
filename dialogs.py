@@ -26,7 +26,7 @@ class DownloadCompleteDialog(object):
         self._show()
 
     def _set_properties(self):
-        self._dialog.geometry('500x280+730+340')
+        self._dialog.geometry('500x276+730+360')
         self._dialog.title('Download completed')
         self._dialog.resizable(0, 0)
         self._dialog.bind('<Escape>', self._close)
