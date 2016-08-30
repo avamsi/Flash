@@ -1,4 +1,5 @@
 import cgi
+import collections
 import logging
 import os.path
 import posixpath
@@ -8,11 +9,11 @@ import threading
 import time
 import tempfile
 import urllib.parse
-import queue
 
 import experimental
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s [%(asctime)s]')
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(levelname)s: %(message)s [%(asctime)s]')
 
 KB = 1024
 MB = 1024*KB
@@ -20,19 +21,18 @@ MB = 1024*KB
 
 class DownloadTask(object):
 
-    MIN_CHUNK_SIZE = 100*KB
-    MAX_CHECKS_FOR_FILE_NAME = 10**6
-    PARTS_PER_IP = 8
-    TIMEOUT = 25
+    _MIN_PART_SIZE = 100*KB
+    _MAX_CHECKS_FOR_FILE_NAME = 10**5
+    _PARTS_PER_IP = 8
+    _TIMEOUT = 25
 
-    def __init__(self, session_pool, url, name=None):
-        self.pool = session_pool
-        self.url = url
-        self.name = name
-        self.update_info()
-        self.chunks = []
-        self.done_queue = queue.Queue()
-        self._path = None  # ask user for path.
+    def __init__(self, session_pool, url):
+        self._pool = session_pool
+        self._url = url
+        self._update_info()
+        self._downloaded = 0
+        self._downloaded_lock = threading.Lock()
+        self._parts = []
 
     @property
     def path(self):
@@ -42,84 +42,111 @@ class DownloadTask(object):
     def path(self, path):
         self._path = os.path.normpath(path)
 
-    def update_info(self):
-        response = self.pool.head(self.url, allow_redirects=True)
-        if self.name is None:
-            try:
-                _, params = cgi.parse_header(response.headers['content-disposition'])
-                try:
-                    self.name = params['filename*'][7:]
-                except KeyError:
-                    self.name = params['filename']
-            except KeyError:
-                path = urllib.parse.urlparse(self.url).path
-                self.name = posixpath.basename(path)
+    @property
+    def time_elapsed(self):
+        return self._time_elapsed
 
-        self.name = urllib.parse.unquote(self.name)
-        self.name = re.sub(r'[\\/:*?"<>|]', '_', self.name)  # quick fix for Windows.
-        self.size = int(response.headers['content-length'])
-        logging.info('%s | %s MB', self.name, self.size//MB)
+    @property
+    def url(self):
+        return self._url
+
+    def _update_info(self):
+        response = self._pool.head(self._url, allow_redirects=True)
+        try:
+            _, params = cgi.parse_header(response.headers['content-disposition'])
+            try:
+                name = params['filename*'][7:]
+            except KeyError:
+                name = params['filename']
+        except KeyError:
+            path = urllib.parse.urlparse(self._url).path
+            name = posixpath.basename(path)
+
+        name = urllib.parse.unquote(name)
+        self._name = re.sub(r'[\\/:*?"<>|]', '_', name)
+        self._size = int(response.headers['content-length'])
+        logging.info('%s | %s MB', self._name, self._size//MB)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def size(self):
+        return self._size
 
     def run(self):
-        if not self._path or self._path is None:
-            self._path = os.path.abspath(self.name)
         logging.info('Downloading to %s', self._path)
-        self.start_time = time.monotonic()
-        self.temp_directory = tempfile.mkdtemp()
-        logging.info('Created a temp directory at %s', self.temp_directory)
-        self.start_workers()
+        self._start_time = time.monotonic()
+        self._temp_directory = tempfile.mkdtemp()
+        logging.info('Created a temp directory at %s', self._temp_directory)
+        self._start_workers()
 
-    def start_workers(self):
-        chunk_size = max(self.MIN_CHUNK_SIZE, self.size//(self.PARTS_PER_IP*self.pool.size))
+    def _start_workers(self):
+        part_size = max(self._MIN_PART_SIZE,
+                        self._size // (self._PARTS_PER_IP * self._pool.size))
         threads = []
         begin = 0
-        while begin <= self.size:
-            end = min(begin + chunk_size, self.size) - 1
-            byte_range = 'bytes=%s-%s' % (begin, end)
-            chunk_path = os.path.join(self.temp_directory, str(begin))
-            self.chunks.append(chunk_path)
-            begin += chunk_size
-            t = threading.Thread(target=self.worker, args=(chunk_path, byte_range))
+        while begin < self._size:
+            end = min(begin + part_size, self._size) - 1
+            part_path = os.path.join(self._temp_directory, str(begin))
+            self._parts.append(part_path)
+            t = threading.Thread(target=self._worker, args=(part_path, begin, end))
+            begin = end + 1
             threads.append(t)
             t.start()
-        self.wait(threads)
+        self._wait(threads)
 
-    def worker(self, chunk_path, byte_range):
-        headers = {'range': byte_range}
-        data = self.pool.get(self.url, timeout=self.TIMEOUT, headers=headers).content
-        with open(chunk_path, 'wb') as chunk:
-            chunk.write(data)
-        self.done_queue.put(None)
+    def _worker(self, part_path, begin, end):
+        stream = self._pool.stream(self._url, begin, end, KB, timeout=self._TIMEOUT)
+        chunks = []
+        for chunk in stream:
+            chunks.append(chunk)
+            with self._downloaded_lock:
+                self._downloaded += len(chunk)
 
-    def wait(self, threads):
-        threading.Thread(target=self.progress, args=(len(threads),)).start()
+        with open(part_path, 'wb') as part:
+            part.write(b''.join(chunks))
+
+    def _wait(self, threads):
+        threading.Thread(target=self._progress).start()
         for t in threads:
             t.join()
-        self.cleanup()
+        self._cleanup()
 
-    def progress(self, parts):
-        dialog = experimental.progress_dialog_async(
-            self.name, parts, self.url, self._path)
-        i = 1
-        while i <= parts:
-            self.done_queue.get()
-            dialog.progress = i
-            i += 1
+    def _progress(self):
+        dialog = experimental.progress_dialog_async(self._name, self._url,
+                                                    self._path, self._size)
+        last_10_diffs = collections.deque(maxlen=10)
+        downloaded_old = 0
+        while downloaded_old < self._size:
+            downloaded = self._downloaded
+            last_10_diffs.append(downloaded - downloaded_old)
+            downloaded_old = downloaded
+            speed = sum(last_10_diffs)
+            if speed != 0:
+                time_left = (self._size - downloaded)//speed
+                time_left = divmod(time_left, 60)
+            else:
+                time_left = None
+            speed /= MB
+            dialog.update(downloaded, speed, time_left)
+            time.sleep(.1)
 
-    def cleanup(self):
-        self.update_path()
+    def _cleanup(self):
+        self._update_path()
         with open(self._path, 'wb') as out:
-            for chunk_path in self.chunks:
-                with open(chunk_path, 'rb') as chunk:
-                    out.write(chunk.read())
+            for part_path in self._parts:
+                with open(part_path, 'rb') as part:
+                    out.write(part.read())
         logging.info('File saved as %s', self._path)
-        shutil.rmtree(self.temp_directory)
-        self.time_elapsed = time.monotonic() - self.start_time
+        shutil.rmtree(self._temp_directory)
+        self._time_elapsed = time.monotonic() - self._start_time
 
-    def update_path(self):
+    def _update_path(self):
         if os.path.exists(self._path):
             path_wo_ext, ext = os.path.splitext(self._path)
-            for i in range(self.MAX_CHECKS_FOR_FILE_NAME):
+            for i in range(self._MAX_CHECKS_FOR_FILE_NAME):
                 tmp_path_wo_ext = path_wo_ext + ('_%s' % i)
                 tmp_path = tmp_path_wo_ext + ext
                 if not os.path.exists(tmp_path):

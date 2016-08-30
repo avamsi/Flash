@@ -4,9 +4,7 @@ import subprocess
 
 def get_ip_addresses():
     ip_addresses = []
-    ipconfig = subprocess.run('ipconfig',
-                              shell=True,
-                              stdout=subprocess.PIPE,
+    ipconfig = subprocess.run('ipconfig', shell=True, stdout=subprocess.PIPE,
                               universal_newlines=True)
     for line in ipconfig.stdout.splitlines():
         line = line.strip()

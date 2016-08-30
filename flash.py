@@ -1,6 +1,4 @@
-import argparse
 import queue
-import shlex
 import sys
 import threading
 
@@ -17,10 +15,6 @@ MESSAGE_FORMAT = (
 KB = 1024
 MB = 1024*KB
 
-parser = argparse.ArgumentParser()
-parser.add_argument('url')
-parser.add_argument('-o', '--out', default=None)
-
 ip_addresses = utils.get_ip_addresses()
 session_pool = sessionpool.SessionPool(ip_addresses)
 
@@ -36,15 +30,16 @@ def listen():
         threading.Thread(target=start, args=(user_input,)).start()
 
 
-def start(user_input):
-    args = parser.parse_args(shlex.split(user_input))
-    dtask = downloader.DownloadTask(session_pool, args.url, args.out)
+def start(url):
+    dtask = downloader.DownloadTask(session_pool, url)
     message_queue.put((saveas, dtask))
 
 
 def saveas(dtask):
-    dtask.path = dialogs.save_as_dialog(initialfile=dtask.name)
-    threading.Thread(target=wait, args=(dtask,)).start()
+    path = dialogs.save_as_dialog(initialfile=dtask.name)
+    if path:
+        dtask.path = path
+        threading.Thread(target=wait, args=(dtask,)).start()
 
 
 def wait(dtask):
