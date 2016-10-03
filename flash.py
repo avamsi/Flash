@@ -30,13 +30,18 @@ def listen():
         threading.Thread(target=start, args=(user_input,)).start()
 
 
-def start(url):
+def start(user_input):
+    try:
+        url, path = user_input.split(' ', 1)
+    except ValueError:
+        url, path = user_input, ''
     dtask = downloader.DownloadTask(session_pool, url)
-    message_queue.put((saveas, dtask))
+    message_queue.put((saveas, dtask, path))
 
 
-def saveas(dtask):
-    path = dialogs.save_as_dialog(initialfile=dtask.name)
+def saveas(dtask, path):
+    if not path:
+        path = dialogs.saveas_dialog(initialfile=dtask.name)
     if path:
         dtask.path = path
         threading.Thread(target=wait, args=(dtask,)).start()

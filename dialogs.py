@@ -8,7 +8,7 @@ from utils import openfile, openfolder
 root = Tk()
 root.wm_attributes('-topmost', 1)
 root.withdraw()
-save_as_dialog = partial(asksaveasfilename, parent=root)
+saveas_dialog = partial(asksaveasfilename, parent=root)
 
 
 class DownloadCompleteDialog(object):
