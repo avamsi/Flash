@@ -19,7 +19,6 @@ def get_ip_addresses():
             line = line.strip()
             ip_address = line.split(' ')[1].split('/')[0]
             if ip_address != '127.0.0.1' and ip_address != '0.0.0.0':
-                print(ip_address)
                 ip_addresses.append(ip_address)
     return ip_addresses
 
