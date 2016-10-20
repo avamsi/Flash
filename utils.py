@@ -1,22 +1,40 @@
 # TODO: cross platform.
 import subprocess
-
+from sys import platform
 
 def get_ip_addresses():
     ip_addresses = []
-    ipconfig = subprocess.run('ipconfig', shell=True, stdout=subprocess.PIPE,
-                              universal_newlines=True)
-    for line in ipconfig.stdout.splitlines():
-        line = line.strip()
-        if line.startswith('IPv4'):
-            ip_address = line.rsplit(' ', 1)[-1]
-            ip_addresses.append(ip_address)
+    if platform.startswith("win"):
+        ipconfig = subprocess.run('ipconfig', shell=True, stdout=subprocess.PIPE,
+                                  universal_newlines=True)
+        for line in ipconfig.stdout.splitlines():
+            line = line.strip()
+            if line.startswith('IPv4'):
+                ip_address = line.rsplit(' ', 1)[-1]
+                ip_addresses.append(ip_address)
+    elif platform.startswith("linux"):
+        ipconfig = subprocess.run('ip addr show | grep "inet "', shell=True, stdout=subprocess.PIPE,
+                                  universal_newlines=True)
+        for line in ipconfig.stdout.splitlines():
+            line = line.strip()
+            ip_address = line.split(' ')[1].split('/')[0]
+            if ip_address != '127.0.0.1' and ip_address != '0.0.0.0':
+                print(ip_address)
+                ip_addresses.append(ip_address)
     return ip_addresses
 
 
 def openfile(path):
-    subprocess.Popen(['explorer', '-p', '/select,', path])
+    if platform.startswith("win"):
+        subprocess.Popen(['explorer', '-p', '/select,', path])
+    elif platform.startswith("linux"):
+        subprocess.Popen(['xdg-open', path])
 
 
 def openfolder(path):
-    subprocess.Popen(['explorer', '/select,', path])
+    if platform.startswith("win"):
+        subprocess.Popen(['explorer', '/select,', path])
+    elif platform.startswith("linux"):
+        temp_path = path[::-1].split('/',maxsplit=1)
+        path = temp_path[1][::-1]+'/'
+        subprocess.Popen(['xdg-open',path])
