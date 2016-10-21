@@ -5,21 +5,24 @@ from sys import platform
 def get_ip_addresses():
     ip_addresses = []
     if platform.startswith("win") or platform == "cygwin":
-        ipconfig = subprocess.run('ipconfig', shell=True, stdout=subprocess.PIPE,universal_newlines=True)
+        ipconfig = subprocess.run('ipconfig', shell=True, stdout=subprocess.PIPE,
+                                  universal_newlines=True)
         for line in ipconfig.stdout.splitlines():
             line = line.strip()
             if line.startswith('IPv4'):
                 ip_address = line.rsplit(' ', 1)[-1]
                 ip_addresses.append(ip_address)
     elif platform.startswith("linux"):
-        ipconfig = subprocess.run('ip addr show | grep "inet "', shell=True, stdout=subprocess.PIPE,universal_newlines=True)
+        ipconfig = subprocess.run('ip addr show | grep "inet "', shell=True, stdout=subprocess.PIPE,
+                                  universal_newlines=True)
         for line in ipconfig.stdout.splitlines():
             line = line.strip()
             ip_address = line.split(' ')[1].split('/')[0]
             if ip_address != '127.0.0.1' and ip_address != '0.0.0.0':
                 ip_addresses.append(ip_address)
-    elif platform == "drawin":
-        ipconfig = subprocess.run('ifconfig | grep "inet "', shell=True, stdout=subprocess.PIPE,universal_newlines=True)
+    elif platform == "darwin":
+        ipconfig = subprocess.run('ifconfig | grep "inet "', shell=True, stdout=subprocess.PIPE,
+                                  universal_newlines=True)
         for line in ipconfig.stdout.splitlines():
             line = line.strip()
             ip_address = line.split(' ')[1]
