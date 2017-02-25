@@ -1,0 +1,15 @@
+{
+    "name": "Flash",
+    "version": "0.1",
+
+    "permissions": [
+        "downloads"
+    ],
+
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": false
+    },
+
+    "manifest_version": 2
+}

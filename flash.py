@@ -1,6 +1,8 @@
+import http.server
 import queue
 import sys
 import threading
+import urllib.parse
 
 import dialogs
 import downloader
@@ -21,6 +23,21 @@ session_pool = sessionpool.SessionPool(ip_addresses)
 message_queue = queue.Queue()
 
 
+class Handler(http.server.BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        parts = urllib.parse.urlsplit(self.path)
+        params = urllib.parse.parse_qs(parts.query)
+        url, path = params['url'][0], params['path'][0]
+        threading.Thread(target=start, args=(url, path)).start()
+
+
+def run():
+    server_address = ('localhost', 20456)
+    httpd = http.server.HTTPServer(server_address, Handler)
+    httpd.serve_forever()
+
+
 def listen():
     while True:
         user_input = input()
@@ -30,11 +47,12 @@ def listen():
         threading.Thread(target=start, args=(user_input,)).start()
 
 
-def start(user_input):
-    try:
-        url, path = user_input.split(' ', 1)
-    except ValueError:
-        url, path = user_input, ''
+def start(url, path=None):
+    if path is None:
+        try:
+            url, path = url.split(' ', 1)
+        except ValueError:
+            path = ''
     dtask = downloader.DownloadTask(session_pool, url)
     message_queue.put((saveas, dtask, path))
 
@@ -60,6 +78,7 @@ def complete(dtask):
 
 
 def main():
+    threading.Thread(target=run).start()
     threading.Thread(target=listen).start()
     while True:
         callback, *args = message_queue.get()
