@@ -9,6 +9,7 @@ import downloader
 import sessionpool
 import utils
 
+# TODO: These are broken. Figure out a way to make them work.
 EXIT_COMMANDS = ['bye', 'exit', 'kill', 'quit']
 MESSAGE_FORMAT = (
     'Size: %s MB\n'
