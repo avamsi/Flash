@@ -30,6 +30,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         params = urllib.parse.parse_qs(parts.query)
         url, path = params['url'][0], params['path'][0]
         threading.Thread(target=start, args=(url, path)).start()
+        # TODO: Wrong to send an empty response?
 
 
 def run():
