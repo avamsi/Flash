@@ -14,9 +14,9 @@ pip3 install requests
 pip3 install requests_toolbelt
 ```
 
-Run [`flash.py`](https://github.com/avamsi/Flash/blob/master/flash.py) and enter download url(s) as input for the script (I know, I know, I should change that)
+Run [`__main.py__`](https://github.com/avamsi/Flash/blob/master/__main__.py) and enter download url(s) as input for the script (I know, I know, I should change that)
 ```
-python3 flash.py
+python3 .
 ```
 
 Or you can install the [Chrome extension](https://github.com/avamsi/Flash/tree/master/chrome_extension) ([Instructions](https://developer.chrome.com/extensions/getstarted#unpacked)) and Flash automatically captures downloads that are > 10 MB in size.  
