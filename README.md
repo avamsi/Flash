@@ -27,4 +27,4 @@ Windows users, if you want to disable the constant nagging by Chrome that "Exten
 ## Supported Platforms
 
 Flash supports Windows, Linux and macOS.  
-Linux and macOS support for [`utils.py`](https://github.com/avamsi/Flash/blob/master/utils.py) is contributed by [@j3rw1N](https://github.com/j3rw1N) in [#2](https://github.com/avamsi/Flash/pull/2)). Feel free to contribute!
+(Linux and macOS support for [`utils.py`](https://github.com/avamsi/Flash/blob/master/utils.py) was contributed by [@j3rw1N](https://github.com/j3rw1N) in [#2](https://github.com/avamsi/Flash/pull/2)). Feel free to contribute!
