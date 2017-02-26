@@ -1,11 +1,10 @@
-import http.server
 import queue
 import sys
 import threading
-import urllib.parse
 
 import dialogs
 import downloader
+import server
 import sessionpool
 import utils
 
@@ -22,22 +21,6 @@ ip_addresses = utils.get_ip_addresses()
 session_pool = sessionpool.SessionPool(ip_addresses)
 
 message_queue = queue.Queue()
-
-
-class Handler(http.server.BaseHTTPRequestHandler):
-
-    def do_GET(self):
-        parts = urllib.parse.urlsplit(self.path)
-        params = urllib.parse.parse_qs(parts.query)
-        url, path = params['url'][0], params['path'][0]
-        threading.Thread(target=start, args=(url, path)).start()
-        # TODO: Wrong to send an empty response?
-
-
-def run():
-    server_address = ('localhost', 20456)
-    httpd = http.server.HTTPServer(server_address, Handler)
-    httpd.serve_forever()
 
 
 def listen():
@@ -80,7 +63,7 @@ def complete(dtask):
 
 
 def main():
-    threading.Thread(target=run).start()
+    threading.Thread(target=server.run, args=(start,)).start()
     threading.Thread(target=listen).start()
     while True:
         callback, *args = message_queue.get()
