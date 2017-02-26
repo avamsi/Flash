@@ -82,7 +82,7 @@ class ProgressDialog(object):
             self._time_left.set('-')
 
     def show(self):
-        self._dialog.focus_force()
+        self._dialog.iconify()
         self._dialog.after(100, self._poll)
         self._dialog.mainloop()
 
