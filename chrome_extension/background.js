@@ -3,9 +3,9 @@ SERVER_URL = 'http://localhost:20456';
 
 function startDownload(url, path) {
     xhr = new XMLHttpRequest();
-    params = ['/?url=', encodeURIComponent(url),
+    params = ['url=', encodeURIComponent(url),
               '&path=', encodeURIComponent(path)].join('');
-    xhr.open('GET', SERVER_URL + params);
+    xhr.open('GET', SERVER_URL + '/?' + params);
     xhr.send();
     // TODO: Fallback to Chrome if Flash is down.
 }
